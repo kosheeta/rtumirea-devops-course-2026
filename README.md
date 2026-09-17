@@ -1,1 +1,10 @@
-# rtumirea-devops-course-2026
+# DevOps Course 2026
+Учебный репозиторий курса "Инструменты DevOps".
+
+## Автор
+Кошеленко Никита Вадимович, ЭФБО-01-24
+
+## Стек
+- Git / GitHub
+- Python
+- Docker (скоро)
