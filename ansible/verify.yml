@@ -1,0 +1,40 @@
+---
+- name: Verify deployed configuration
+  hosts: vm
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Check SSH effective configuration
+      ansible.builtin.command: /usr/sbin/sshd -T
+      register: sshd_effective
+      changed_when: false
+
+    - name: Assert password and root authentication are disabled
+      ansible.builtin.assert:
+        that:
+          - "'passwordauthentication no' in sshd_effective.stdout_lines"
+          - "'permitrootlogin no' in sshd_effective.stdout_lines"
+
+    - name: Read container facts
+      community.docker.docker_container_info:
+        name: "{{ app_container_name }}"
+      register: container_info
+
+    - name: Assert container is running
+      ansible.builtin.assert:
+        that:
+          - container_info.exists
+          - container_info.container.State.Running
+          - container_info.container.HostConfig.PortBindings[(app_internal_port | string) ~ '/tcp'][0].HostIp == '127.0.0.1'
+
+    - name: Check direct application health
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ app_host_port }}/health"
+        return_content: true
+      register: direct_health
+
+    - name: Assert health payload
+      ansible.builtin.assert:
+        that:
+          - direct_health.status == 200
+          - direct_health.json.status == "ok"
